@@ -4,45 +4,79 @@ import { CharacterRepositoryImpl } from '../../infra/repositories/CharacterRepos
 import { GetCharactersUseCase } from '../../domain/usecases/GetCharactersUseCase'
 
 const repository = new CharacterRepositoryImpl()
-const getCharactersUseCase = new GetCharactersUseCase(repository)
 
-export const useCharacterStore = defineStore('character', {
-  state: () => ({
-    characters: [],
-    loading: false,
+const getCharactersUseCase =
+  new GetCharactersUseCase(repository)
 
-    page: 1,
-    totalPages: 1,
+export const useCharacterStore =
+  defineStore('character', {
+    state: () => ({
+      characters: [],
+      loading: false,
 
-    search: '',
-    status: ''
-  }),
+      page: 1,
+      totalPages: 1,
 
-  actions: {
-    async fetchCharacters() {
-      try {
-        this.loading = true
+      search: '',
+      status: ''
+    }),
 
-        const response = await getCharactersUseCase.execute({
-          page: this.page,
-          name: this.search,
-          status: this.status
-        })
+    actions: {
+      async fetchCharacters() {
+        try {
+          this.loading = true
 
-        this.characters = response.results
-        this.totalPages = response.info.pages
-      } catch (error) {
-        console.error(error)
-      } finally {
-        this.loading = false
+          const response =
+            await getCharactersUseCase.execute({
+              page: this.page,
+              name: this.search,
+              status: this.status
+            })
+
+          this.characters =
+            response.results || []
+
+          this.totalPages =
+            response.info?.pages || 1
+        } catch (error) {
+          console.error(
+            'Erro ao buscar personagens:',
+            error
+          )
+
+          this.characters = []
+          this.totalPages = 1
+        } finally {
+          this.loading = false
+        }
+      },
+
+      async setStatus(status) {
+        this.status = status
+
+        this.page = 1
+
+        await this.fetchCharacters()
+      },
+
+      async setSearch(search) {
+        this.search = search
+
+        this.page = 1
+
+        await this.fetchCharacters()
+      },
+
+      async setPage(page) {
+        this.page = page
+
+        await this.fetchCharacters()
+      },
+
+      clearFilters() {
+        this.search = ''
+        this.status = ''
+        this.page = 1
       }
-    },
-
-    async setStatus(status) {
-      this.status = status
-      this.page = 1
-
-      await this.fetchCharacters()
     }
-  }
-})
+  })
